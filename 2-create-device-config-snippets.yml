@@ -1,0 +1,57 @@
+---
+- name: EVE-NG MPLS Automation - Config Snippets
+  hosts: all
+  connection: local
+  tags: [ snippets ]
+
+  pre_tasks:
+
+    - name: Include Play Data Models
+      include_vars: "{{ item }}"
+      with_fileglob: [ "vars/*.yml" ]
+      run_once: yes
+      changed_when: False
+
+    - name: Include Device Data Models
+      include_vars: "{{ item }}"
+      with_fileglob: [ "{{ data_models }}/set_fact_{{ inventory_hostname }}*.yml" ]
+      changed_when: False
+
+    - name: Cleanup Build Directory
+      file: 
+        path: "{{ build_dir }}/{{ inventory_hostname }}/"
+        state: absent
+      register: build_directory
+      changed_when: False
+
+    - name: Create Empty Build Directory
+      file: 
+        path: "{{ build_directory.path }}"
+        state: directory
+      changed_when: False
+
+  tasks:
+
+    - name: "[Snippet] - Base Config"
+      template:
+        src: base/base.j2
+        dest: "{{ build_dir }}/{{ inventory_hostname }}/00-base_config.out"
+      tags: [ print_action ]
+
+    - name: "[Snippet] - IP/MPLS Fabric"
+      template:
+        src: fabric/base.j2
+        dest: "{{ build_dir }}/{{ inventory_hostname }}/01-fabric.out"
+      tags: [ print_action ]
+
+    - name: "[Snippet] - BGP"
+      template:
+        src: bgp/base.j2
+        dest: "{{ build_dir }}/{{ inventory_hostname }}/02-bgp.out"
+      tags: [ print_action ]
+
+    - name: "[Snippet] - L3VPNs"
+      template:
+        src: services/base.j2
+        dest: "{{ build_dir }}/{{ inventory_hostname }}/10-l3vpn.out"
+      tags: [ print_action ]

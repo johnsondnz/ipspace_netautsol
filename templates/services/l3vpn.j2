@@ -1,0 +1,80 @@
+{% macro configure_l3vpn(index, name, interface, ip_prefix) %}
+{% set vpn_uuid = index - 1 + vpn_uuid_start %}
+{% set vpn_vlan_id = index - 1 + vpn_vlan_id_start %}
+{% set vpn_name = "VPN_{}-{}".format(name|upper|replace(" ","_"), vpn_uuid) %}
+groups { 
+    {{ vpn_name }} {
+        routing-instances {
+            /* show groups {{ vpn_name }} */
+            /* show configuration groups {{ vpn_name }} */
+            {{ vpn_name }} {
+                description "{{ vpn_name }} | VPN_UUID {{ vpn_uuid }}";
+                instance-type vrf;                             
+                interface {{ interface }}.{{ vpn_vlan_id }};
+                route-distinguisher {{ vpn_uuid }}L:{{ id }};
+                vrf-import RP-{{ vpn_name }}-IMPORT;
+                vrf-export RP-{{ vpn_name }}-EXPORT;   
+                vrf-target target:{{ rt_prefix }}:{{ vpn_uuid }};
+                vrf-table-label;
+            }
+        }
+        interfaces {
+            /* show groups {{ vpn_name }} */
+            /* show configuration groups {{ vpn_name }} */
+            {{ interface }} {
+                description "{{ vpn_name }} | VPN_UUID {{ vpn_uuid }}";
+                vlan-tagging;
+                unit {{ vpn_vlan_id }} {
+                    vlan-id {{ vpn_vlan_id }};
+                    family inet {
+                        address {{ ip_prefix }};
+                    }
+                }
+            }
+        }
+        policy-options {
+            /* show groups {{ vpn_name }} */
+            /* show configuration groups {{ vpn_name }} */
+            policy-statement RP-{{ vpn_name }}-IMPORT {
+                term IMPORT-CUSTOMER-PREFIXES {
+                    from {
+                        protocol [ direct static ospf isis bgp ];
+                        community CM-{{ vpn_name }};
+                    }
+                    then accept;
+                }
+                term DENY-ALL-OTHERS {
+                    then reject;
+                }
+            }
+            /* show groups {{ vpn_name }} */
+            /* show configuration groups {{ vpn_name }} */
+            policy-statement RP-{{ vpn_name }}-EXPORT {
+                term EXPORT-CUSTOMER-PREFIXES {
+                    from protocol [ direct static ospf isis bgp ];
+                    then {
+                        community add CM-{{ vpn_name }};
+                        accept;
+                    }
+                }
+                term DENY-ALL-OTHERS {
+                    then reject;
+                }
+            }
+            /* show groups {{ vpn_name }} */
+            /* show configuration groups {{ vpn_name }} */
+            community CM-{{ vpn_name }} members target:{{ rt_prefix }}:{{ vpn_uuid }};
+        }
+    }
+}
+apply-groups {{ vpn_name }};
+{% endmacro %}
+
+{%- for customer in vpnv4_customers %}
+{% set index = loop.index %}
+{% for peer in customer.provider_edge %}
+{% if peer.node == inventory_hostname %}
+{{ configure_l3vpn(index, customer.name, peer.interface, peer.ip_prefix) }}
+{% endif %}
+{% endfor %}
+{% endfor %}

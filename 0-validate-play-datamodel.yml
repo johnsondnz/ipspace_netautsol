@@ -1,0 +1,20 @@
+---
+- name: EVE-NG MPLS Automation - Datamodel Validation
+  hosts: all
+  connection: local
+  tags: [ validate_models ]
+
+  pre_tasks:
+
+    - command: date
+      register: play_run_datetime
+      run_once: true
+      changed_when: False
+
+    - name: Include Data Models
+      include_vars: "{{ item }}"
+      with_fileglob: [ "vars/*.yml" ]
+      run_once: yes
+      changed_when: False
+
+  tasks:

@@ -1,0 +1,158 @@
+#jinja2: lstrip_blocks: "True"
+groups {
+    PROTOCOL-DEFAULTS-BGP {
+        protocols {
+            bgp {
+                group <*> {
+                    type internal;
+                    family inet {
+                        unicast;
+                    }
+                    family inet-vpn {
+                        unicast;
+                    }
+                    family l2vpn {
+                        signaling;
+                    }
+                    family inet-mvpn {
+                        signaling;
+                    }
+                }
+            }
+        }
+    }
+    PROTOCOL-DEFAULTS-MPLS {
+        protocols {
+            mpls {
+                log-updown {
+                    syslog;
+                    trap;
+                    trap-path-down;
+                    trap-path-up;
+                }
+                interface fxp0.0 {
+                    disable;
+                }
+                interface em0.0 {
+                    disable;
+                }
+            }
+        }
+    }
+    PROTOCOL-DEFAULTS-RSVP {
+        protocols {
+            rsvp {
+                interface fxp0.0 {
+                    disable;
+                }
+                interface em0.0 {
+                    disable;
+                }
+                interface <em*> {
+                    aggregate;
+                    reliable;
+                    subscription {{ rsvp_subscription }};
+                    link-protection;
+                }
+                interface lo0.0 {
+                    aggregate;
+                    reliable;
+                    link-protection;
+                }
+            }
+        }
+    }
+    PROTOCOL-DEFAULTS-LDP {
+        protocols {
+            ldp {
+                keepalive-timeout {{ ldp_keepalive_timeout }};
+                interface fxp0.0 {
+                    disable;
+                }
+                interface em0.0 {
+                    disable;
+                }
+                interface lo0.0;
+            }
+        }
+    }
+    PROTOCOL-DEFAULTS-ISIS {
+        protocols {
+            isis {
+                traffic-engineering {
+                    family inet {
+                        shortcuts;
+                    }
+                    family inet6 {
+                        shortcuts;
+                    }
+                }
+                reference-bandwidth {{ isis_reference_bandwidth }};
+                interface lo0.0 {
+                    passive;
+                }
+                interface fxp0.0 {
+                    disable;
+                }
+                interface em0.0 {
+                    disable;
+                }
+                interface <em*> {
+                    node-link-protection;
+                    point-to-point;
+                    level 1 disable;
+                    level 2 {
+                        hello-interval {{ isis_hello_interval }};
+                    }
+                }
+            }
+        }
+    }
+}
+/* Best Practice: You must configure per-packet load-balancing routing policy when using ospf/isis node-link-protection */
+policy-options {
+    policy-statement load-balancing-policy {
+        then {
+            load-balance per-packet;
+        }
+    }
+}
+routing-options {
+    forwarding-table {
+        /* Best Practice: You must configure per-packet load-balancing routing policy when using ospf/isis node-link-protection */
+        export load-balancing-policy;
+    }
+}
+policy-options {
+    policy-statement CORE-RP-EXPORT {
+        term PERMIT-LOOPBACKS {
+            from interface lo0.0;
+            then accept;
+        }
+        term BLOCK-FABRIC {
+            from protocol direct;
+            then reject;
+        }
+    }
+}
+protocols {
+    bgp {
+        apply-groups PROTOCOL-DEFAULTS-BGP;
+    }
+    rsvp {
+        apply-groups PROTOCOL-DEFAULTS-RSVP;
+    }
+    mpls {
+        apply-groups PROTOCOL-DEFAULTS-MPLS;
+    }
+    ldp {
+        apply-groups PROTOCOL-DEFAULTS-LDP;
+    }
+    isis {
+        apply-groups PROTOCOL-DEFAULTS-ISIS;
+        export CORE-RP-EXPORT;
+    }
+    lldp {
+        interface all;
+    }
+}

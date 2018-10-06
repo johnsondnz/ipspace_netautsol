@@ -1,0 +1,44 @@
+#jinja2: lstrip_blocks: "True"
+version {{ software_version }};
+system {
+    host-name {{ inventory_hostname }};
+    root-authentication {
+        encrypted-password "$1$nb8BpEs1$vZ/nq04Vus7rHLQv/HouI0"; ## SECRET-DATA
+    }
+    login {
+        user lab {
+            uid 2000;
+            class super-user;
+            authentication {
+                encrypted-password "$1$k5QNc0zP$SW.4Zgv65BqXJtVfUWGQ/."; ## SECRET-DATA
+            }
+        }
+    }
+    services {
+        ssh {
+            max-sessions-per-connection 32;
+        }
+        telnet {
+            connection-limit 5;
+        }
+        netconf {
+            ssh;
+        }
+    }
+    syslog {
+        user * {
+            any emergency;
+        }
+        file messages {
+            any notice;
+            authorization info;
+        }
+        file interactive-commands {
+            interactive-commands any;
+        }
+    }
+    ntp {
+        boot-server 192.168.1.237;
+        server 192.168.1.237;
+    }
+}

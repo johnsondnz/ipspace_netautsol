@@ -1,0 +1,21 @@
+---
+- name: EVE-NG MPLS Automation - Deploy Configs
+  hosts: all
+  connection: local
+
+  pre_tasks:
+
+    - name: Include Play Data Models
+      include_vars: "{{ item }}"
+      with_fileglob: [ "vars/*.yml" ]
+      run_once: yes
+
+  tasks:
+
+    - name: "[Deploy] - Bootstrapping LAB Network"
+      junos_config:
+        src: templates/bootstrap/{{ os }}/{{ inventory_hostname }}.conf
+        src_format: set
+        update: replace
+        provider: "{{ netconf }}"
+      tags: [ print_action ]

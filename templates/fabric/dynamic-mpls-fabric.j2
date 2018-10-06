@@ -1,0 +1,38 @@
+#jinja2: lstrip_blocks: "True"
+interfaces {
+    {# Configure the Loopback interface #}
+	{{ loopback.name }} {
+        unit {{ loopback.logical_attributes.sub_iface }} {
+            description "PEERING INTERFACE --- DO NOT DELETE";
+            {% if loopback.logical_attributes.inet.enabled -%}
+            family inet {
+                address {{ loopback.logical_attributes.inet.address }};
+            }
+            {% endif %}
+            {% if loopback.logical_attributes.iso.enabled -%}
+            family iso {
+            	address {{ loopback.logical_attributes.iso.address }};
+            }
+            {% endif %}
+        }
+    }
+    {# Configure the MPLS fabric interfaces -#}
+    {% for iface in fabric_interfaces -%}
+	/* {{ iface.annotatation }} */
+	{{ iface.name }} {
+		mtu {{ iface.physical_attributes.mtu }};
+		description "{{ iface.physical_attributes.descr }}";
+		unit {{ iface.logical_attributes.sub_iface }} {
+            {% if iface.logical_attributes.inet.enabled -%}
+			family inet {
+				address {{ iface.logical_attributes.inet.address }};
+			}
+            {% endif -%}
+			family mpls;
+            {% if iface.logical_attributes.iso.enabled -%}
+            family iso;
+            {% endif %}
+		}
+	}
+    {% endfor %}
+}

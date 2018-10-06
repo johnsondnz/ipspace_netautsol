@@ -1,0 +1,6 @@
+---
+os: junos
+role: provider_edge
+system:
+  hostname: LAB-PE2
+id: 102

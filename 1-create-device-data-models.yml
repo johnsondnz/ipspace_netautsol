@@ -1,0 +1,67 @@
+---
+- name: EVE-NG MPLS Automation - Device Datamodels
+  hosts: all
+  connection: local
+  tags: [ data_models ]
+
+  pre_tasks:
+
+    - command: date
+      register: play_run_datetime
+      run_once: true
+      changed_when: False
+
+    - name: Include Data Models
+      include_vars: "{{ item }}"
+      with_fileglob: [ "vars/*.yml" ]
+      run_once: yes
+      changed_when: False
+
+    - file: 
+        path: "{{ data_models }}"
+        state: directory
+      run_once:
+      changed_when: False
+
+  tasks:
+
+    # -------------------------------------------------------------------------------------------- #
+
+    - name: "[Models] - Create Device Fabric Model"
+      template:
+        src: models/fabric_data_model.j2
+        dest: "{{ data_models }}/set_fact_{{ inventory_hostname }}_fabric.yml"
+      tags: [ print_action ]
+
+    - name: "[Models] - Import Fabric Data Models"
+      include_vars: "{{ item }}"
+      with_fileglob: [ "{{ data_models }}/set_fact_{{ inventory_hostname }}_fabric.yml" ]
+      tags: [ print_action, import ]
+
+    # -------------------------------------------------------------------------------------------- #
+
+    - name: "[Models] - Create Device BGP Model"
+      template:
+        src: models/bgp_data_model.j2
+        dest: "{{ data_models }}/set_fact_{{ inventory_hostname }}_bgp.yml"
+      tags: [ print_action ]
+
+    - name: "[Models] - Import BGP Data Models"
+      include_vars: "{{ item }}"
+      with_fileglob: [ "{{ data_models }}/set_fact_{{ inventory_hostname }}_bgp.yml" ]
+      tags: [ print_action, import ]
+
+    # -------------------------------------------------------------------------------------------- #
+
+    - name: "[Models] - Create Device Services Model"
+      template:
+        src: models/services.j2
+        dest: "{{ data_models }}/set_fact_{{ inventory_hostname }}_services.yml"
+      tags: [ print_action ]
+
+    - name: "[Models] - Import Services Data Models"
+      include_vars: "{{ item }}"
+      with_fileglob: [ "{{ data_models }}/set_fact_{{ inventory_hostname }}_services.yml" ]
+      tags: [ print_action, import ]
+
+    # -------------------------------------------------------------------------------------------- #

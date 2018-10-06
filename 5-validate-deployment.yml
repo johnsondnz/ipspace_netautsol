@@ -1,0 +1,17 @@
+---
+---
+- name: EVE-NG MPLS Automation - Network Validation
+  hosts: all
+  connection: local
+  tags: [ validate_network ]
+
+  pre_tasks:
+
+    - name: Include Play Data Models
+      include_vars: "{{ item }}"
+      with_fileglob: [ "vars/*.yml" ]
+      run_once: yes
+      changed_when: False
+
+  tasks:
+

@@ -1,0 +1,34 @@
+---
+- name: EVE-NG MPLS Automation - Assemble Config Snippets
+  hosts: all
+  connection: local
+  tags: [ assemble ]
+
+  pre_tasks:
+
+    - name: Include Play Data Models
+      include_vars: "{{ item }}"
+      with_fileglob: [ "vars/*.yml" ]
+      run_once: yes
+      changed_when: False
+
+    - file: 
+        path: "{{ configs_dir }}"
+        state: directory
+      run_once:
+      changed_when: False
+
+  tasks:
+
+    - name: "[Assemble] - Glue it Together"
+      assemble:
+        src: "{{ build_dir }}/{{ inventory_hostname }}/"
+        dest: "{{ configs_dir }}/{{ inventory_hostname }}-candidate.conf"
+      tags: [ print_action ]
+
+    - name: Remove lines beginning with '#'
+      lineinfile:
+        path: "{{ configs_dir }}/{{ inventory_hostname }}-candidate.conf"
+        regexp: '^#.+$'
+        state: absent
+      changed_when: False
